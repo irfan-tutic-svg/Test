@@ -27,7 +27,7 @@
   const Z_BOTTOM = 1.55;    // unterer Streckenrand
   const Z_FAR = 62;         // Spawn-Distanz
 
-  let skyline = null;
+  let skyline = null, skylineFar = null;
 
   function resize() {
     DPR = Math.min(window.devicePixelRatio || 1, 2.5);
@@ -40,7 +40,8 @@
     cx = W / 2;
     horizonY = H * 0.40;
     F = H * 0.95;
-    skyline = A.buildSkyline(Math.max(W * 2, 1400), Math.round(H * 0.36), 7);
+    skyline = A.buildSkyline(Math.max(W * 2, 1400), Math.round(H * 0.34), 7, { far: false });
+    skylineFar = A.buildSkyline(Math.max(W * 2, 1400), Math.round(H * 0.26), 23, { far: true });
   }
   window.addEventListener("resize", resize);
 
@@ -366,25 +367,40 @@
   function render() {
     // Himmel
     const sky = ctx.createLinearGradient(0, 0, 0, horizonY + 40);
-    sky.addColorStop(0, "#0b2a3a");
-    sky.addColorStop(0.5, "#13628a");
-    sky.addColorStop(1, "#36b0c4");
+    sky.addColorStop(0, "#0a2236");
+    sky.addColorStop(0.45, "#1b5f87");
+    sky.addColorStop(0.8, "#2f97b6");
+    sky.addColorStop(1, "#5fc6d6");
     ctx.fillStyle = sky;
     ctx.fillRect(0, 0, W, horizonY + 60);
 
-    // Skyline (Parallax nach Spur)
-    if (skyline) {
-      const off = (-player.laneF * 40) % (skyline.width / 2);
-      ctx.globalAlpha = 0.9;
-      ctx.drawImage(skyline, off - skyline.width / 4, horizonY - skyline.height + 4);
-      ctx.globalAlpha = 1;
+    // Sonnen-Glow am Horizont
+    const sunX = cx - player.laneF * 30;
+    const sg = ctx.createRadialGradient(sunX, horizonY, 4, sunX, horizonY, H * 0.5);
+    sg.addColorStop(0, "rgba(255,236,170,0.55)");
+    sg.addColorStop(0.4, "rgba(255,180,120,0.18)");
+    sg.addColorStop(1, "rgba(255,180,120,0)");
+    ctx.fillStyle = sg;
+    ctx.fillRect(0, 0, W, horizonY + 60);
+
+    // Ferne Skyline (langsamer Parallax)
+    if (skylineFar) {
+      const off = (-player.laneF * 18) % (skylineFar.width / 2);
+      ctx.globalAlpha = 0.85;
+      ctx.drawImage(skylineFar, off - skylineFar.width / 4, horizonY - skylineFar.height + 6);
     }
     // Wolken
     const cl = A.cloud;
-    ctx.globalAlpha = 0.7;
+    ctx.globalAlpha = 0.65;
     for (let i = 0; i < 3; i++) {
-      const cxp = ((state.dist * 6 + i * 520) % (W + 200)) - 100 - player.laneF * 20;
-      ctx.drawImage(cl, W - cxp, horizonY * 0.25 + i * 30, 120, 60);
+      const cxp = ((state.dist * 6 + i * 520) % (W + 240)) - 120 - player.laneF * 20;
+      ctx.drawImage(cl, W - cxp, horizonY * 0.22 + i * 32, 130, 65);
+    }
+    // Nahe Skyline (stärkerer Parallax)
+    if (skyline) {
+      const off = (-player.laneF * 44) % (skyline.width / 2);
+      ctx.globalAlpha = 0.96;
+      ctx.drawImage(skyline, off - skyline.width / 4, horizonY - skyline.height + 4);
     }
     ctx.globalAlpha = 1;
 
@@ -431,6 +447,28 @@
       ctx.fillRect(pt.x - pt.size / 2, pt.y - pt.size / 2, pt.size, pt.size);
     }
     ctx.globalAlpha = 1;
+
+    // Speed-Lines bei hohem Tempo
+    const spd = (state.speed - 22) / 18; // 0..1 ab mittlerem Tempo
+    if (spd > 0 && mode === GS.PLAY) {
+      ctx.strokeStyle = `rgba(255,255,255,${Math.min(0.22, spd * 0.22)})`;
+      ctx.lineWidth = 2;
+      const n = 6;
+      for (let i = 0; i < n; i++) {
+        const ang = (i / n) * Math.PI * 2 + state.dist * 0.2;
+        const r1 = W * 0.28, r2 = W * (0.42 + (i % 3) * 0.06);
+        const sx2 = cx + Math.cos(ang) * r1, sy2 = horizonY + 60 + Math.sin(ang) * r1 * 0.7;
+        const ex = cx + Math.cos(ang) * r2, ey = horizonY + 60 + Math.sin(ang) * r2 * 0.9;
+        ctx.beginPath(); ctx.moveTo(sx2, sy2); ctx.lineTo(ex, ey); ctx.stroke();
+      }
+    }
+
+    // Vignette
+    const vg = ctx.createRadialGradient(cx, H * 0.52, H * 0.3, cx, H * 0.52, H * 0.75);
+    vg.addColorStop(0, "rgba(0,0,0,0)");
+    vg.addColorStop(1, "rgba(0,0,0,0.42)");
+    ctx.fillStyle = vg;
+    ctx.fillRect(0, 0, W, H);
   }
 
   function drawGround() {
@@ -440,37 +478,69 @@
 
     // Tunnelboden
     const gg = ctx.createLinearGradient(0, horizonY, 0, H);
-    gg.addColorStop(0, "#0e6e7c");
-    gg.addColorStop(1, "#0a3540");
+    gg.addColorStop(0, "#11808f");
+    gg.addColorStop(0.5, "#0c5a66");
+    gg.addColorStop(1, "#082e38");
     ctx.fillStyle = gg;
     ctx.beginPath();
     ctx.moveTo(fL.x, fL.y); ctx.lineTo(fR.x, fR.y);
     ctx.lineTo(nR.x, nR.y); ctx.lineTo(nL.x, nL.y); ctx.closePath();
     ctx.fill();
 
-    // Seitenwände
-    ctx.fillStyle = "#0a2530";
+    // Seitenwände (Verlauf)
+    const wgL = ctx.createLinearGradient(0, 0, fL.x, 0);
+    wgL.addColorStop(0, "#06181f"); wgL.addColorStop(1, "#0c3038");
+    ctx.fillStyle = wgL;
     ctx.beginPath();
     ctx.moveTo(0, horizonY); ctx.lineTo(fL.x, fL.y); ctx.lineTo(nL.x, nL.y); ctx.lineTo(0, H); ctx.closePath(); ctx.fill();
+    const wgR = ctx.createLinearGradient(W, 0, fR.x, 0);
+    wgR.addColorStop(0, "#06181f"); wgR.addColorStop(1, "#0c3038");
+    ctx.fillStyle = wgR;
     ctx.beginPath();
     ctx.moveTo(W, horizonY); ctx.lineTo(fR.x, fR.y); ctx.lineTo(nR.x, nR.y); ctx.lineTo(W, H); ctx.closePath(); ctx.fill();
 
+    // Wand-Lichter (scrollend, an beiden Seiten)
+    const lstep = 6;
+    const lphase = state.dist % lstep;
+    for (let z = Z_BOTTOM + lstep - lphase; z < Z_FAR; z += lstep) {
+      const a = Math.min(0.5, z < 40 ? 0.5 : 0.2);
+      const pl = project(-TRACK_HALF, z, 0.55), pr = project(TRACK_HALF, z, 0.55);
+      const r = Math.max(1.5, pl.s * 0.04);
+      ctx.fillStyle = `rgba(120,230,255,${a})`;
+      ctx.beginPath(); ctx.arc(pl.x - r * 2, pl.y, r, 0, 7); ctx.fill();
+      ctx.beginPath(); ctx.arc(pr.x + r * 2, pr.y, r, 0, 7); ctx.fill();
+    }
+
     // Schwellen (scrollend)
-    const step = 2.2;
+    const step = 2.0;
     const phase = state.dist % step;
-    ctx.strokeStyle = "rgba(255,255,255,0.10)";
     for (let z = Z_BOTTOM + step - phase; z < Z_FAR; z += step) {
-      const l = project(-TRACK_HALF, z, 0), r = project(TRACK_HALF, z, 0);
-      ctx.lineWidth = Math.max(1, l.s * 0.05);
+      const l = project(-0.78, z, 0), r = project(0.78, z, 0);
+      ctx.strokeStyle = "rgba(30,20,12,0.45)";
+      ctx.lineWidth = Math.max(1, l.s * 0.06);
       ctx.beginPath(); ctx.moveTo(l.x, l.y); ctx.lineTo(r.x, r.y); ctx.stroke();
     }
 
-    // Spurlinien
-    ctx.strokeStyle = "rgba(255,255,255,0.28)";
-    ctx.lineWidth = 2;
+    // Glänzende Schienen entlang der Spurgrenzen
     for (const sep of [-0.75, -0.25, 0.25, 0.75]) {
       const f = project(sep, Z_FAR, 0), n = project(sep, Z_BOTTOM, 0);
+      ctx.strokeStyle = "rgba(0,0,0,0.35)";
+      ctx.lineWidth = Math.max(2, n.s * 0.05);
       ctx.beginPath(); ctx.moveTo(f.x, f.y); ctx.lineTo(n.x, n.y); ctx.stroke();
+      ctx.strokeStyle = "rgba(200,235,255,0.7)";
+      ctx.lineWidth = Math.max(1, n.s * 0.022);
+      ctx.beginPath(); ctx.moveTo(f.x, f.y); ctx.lineTo(n.x, n.y); ctx.stroke();
+    }
+
+    // Leuchtende Mittellinien der Spuren (gestrichelt)
+    for (const lane of [-1, 0, 1]) {
+      const cstep = 3.2, cph = (state.dist * 1.0) % cstep;
+      for (let z = Z_BOTTOM + cstep - cph; z < Z_FAR; z += cstep) {
+        const a = project(laneToX(lane), z, 0.01), b = project(laneToX(lane), z + 1.4, 0.01);
+        ctx.strokeStyle = "rgba(255,255,255,0.18)";
+        ctx.lineWidth = Math.max(1, a.s * 0.02);
+        ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
+      }
     }
   }
 
