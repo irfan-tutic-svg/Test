@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="theme-color" content="#1b9aaa" />
+  <title>Tunnel Dash</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <div id="game-wrap">
+    <canvas id="game"></canvas>
+
+    <!-- HUD (im Spiel) -->
+    <div id="hud" class="hidden">
+      <div class="hud-top">
+        <div class="hud-pill" id="hud-score">0</div>
+        <div class="hud-pill hud-coins"><span class="coin-dot"></span><span id="hud-coins">0</span></div>
+        <button id="btn-pause" class="icon-btn" aria-label="Pause">II</button>
+      </div>
+      <div id="powerup-bar"></div>
+    </div>
+
+    <!-- Hauptmenü -->
+    <div id="menu" class="overlay">
+      <div class="panel">
+        <h1 class="logo">TUNNEL<span>DASH</span></h1>
+        <p class="subtitle">Endless Runner</p>
+        <div class="stat-row">
+          <div class="stat"><span class="stat-label">Highscore</span><span class="stat-val" id="menu-highscore">0</span></div>
+          <div class="stat"><span class="stat-label">Münzen</span><span class="stat-val" id="menu-coins">0</span></div>
+        </div>
+        <button id="btn-play" class="big-btn">SPIELEN</button>
+        <div class="char-pick">
+          <span>Charakter</span>
+          <div class="chars" id="char-list"></div>
+        </div>
+        <button id="btn-howto" class="text-btn">So wird gespielt</button>
+      </div>
+    </div>
+
+    <!-- Anleitung -->
+    <div id="howto" class="overlay hidden">
+      <div class="panel">
+        <h2>So wird gespielt</h2>
+        <ul class="howto-list">
+          <li><b>Wischen ← →</b> &nbsp;Spur wechseln</li>
+          <li><b>Wischen ↑</b> &nbsp;Springen</li>
+          <li><b>Wischen ↓</b> &nbsp;Rollen / Ducken</li>
+          <li>Am PC: <b>Pfeiltasten</b> oder <b>WASD</b></li>
+        </ul>
+        <div class="legend">
+          <div><span class="lg coin"></span> Münzen sammeln</div>
+          <div><span class="lg magnet"></span> Magnet</div>
+          <div><span class="lg x2"></span> 2× Punkte</div>
+          <div><span class="lg jet"></span> Jetpack</div>
+          <div><span class="lg board"></span> Hoverboard (Schutz)</div>
+        </div>
+        <button id="btn-howto-back" class="big-btn">Zurück</button>
+      </div>
+    </div>
+
+    <!-- Pause -->
+    <div id="pause" class="overlay hidden">
+      <div class="panel">
+        <h2>Pause</h2>
+        <button id="btn-resume" class="big-btn">Weiter</button>
+        <button id="btn-quit" class="text-btn">Zum Menü</button>
+      </div>
+    </div>
+
+    <!-- Game Over -->
+    <div id="gameover" class="overlay hidden">
+      <div class="panel">
+        <h2>Game Over</h2>
+        <div class="stat-row">
+          <div class="stat"><span class="stat-label">Punkte</span><span class="stat-val" id="go-score">0</span></div>
+          <div class="stat"><span class="stat-label">Münzen</span><span class="stat-val" id="go-coins">0</span></div>
+        </div>
+        <div id="go-best" class="best-badge hidden">Neuer Highscore! 🏆</div>
+        <button id="btn-again" class="big-btn">Nochmal</button>
+        <button id="btn-menu" class="text-btn">Zum Menü</button>
+      </div>
+    </div>
+
+    <!-- Countdown -->
+    <div id="countdown" class="hidden"></div>
+  </div>
+
+  <script src="js/assets.js"></script>
+  <script src="js/audio.js"></script>
+  <script src="js/game.js"></script>
+</body>
+</html>
